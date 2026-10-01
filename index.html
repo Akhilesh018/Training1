@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brewbench – Coffee gear and beans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9eef0;--ink:#12233a;--mute:#5a6b7d;--card:#fff;--acc:#f2b632;--sage:#6e8b74;--line:#cfd8de;--r:10px}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1a2a;--ink:#e9eef0;--mute:#9db0c2;--card:#16283d;--line:#28405a}}
+*{box-sizing:border-box;margin:0}
+body{font-family:"Bricolage Grotesque",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+header{position:sticky;top:0;z-index:5;background:var(--ink);color:#e9eef0;display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.2rem}
+header h1{font-size:1.3rem;font-weight:800;letter-spacing:-.02em}
+.cartbtn{background:var(--acc);color:#12233a;border:0;border-radius:99px;padding:.45rem 1rem;font-weight:600;cursor:pointer}
+.hero{padding:3.5rem 1.2rem 2rem;max-width:1100px;margin:auto}
+.hero h2{font-size:clamp(2.2rem,7vw,4.6rem);line-height:1;font-weight:800;letter-spacing:-.04em;max-width:14ch}
+.hero p{color:var(--mute);margin-top:1rem;max-width:46ch}
+.bar{max-width:1100px;margin:1rem auto;padding:0 1.2rem;display:flex;flex-wrap:wrap;gap:.6rem}
+.bar input,.bar select{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:.55rem .8rem}
+.bar input{flex:1;min-width:180px}
+.chips{display:flex;gap:.4rem;flex-wrap:wrap;width:100%}
+.chip{border:1px solid var(--line);background:transparent;border-radius:99px;padding:.3rem .9rem;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{max-width:1100px;margin:0 auto;padding:0 1.2rem 3rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem}
+.card{background:var(--card);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
+.art{height:150px;display:grid;place-items:center;font-size:3.5rem}
+.info{padding:1rem;display:flex;flex-direction:column;gap:.3rem;flex:1}
+.info h3{font-size:1.05rem}
+.info small{color:var(--mute)}
+.row{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:.6rem}
+.price{font-weight:800}
+.add{background:var(--ink);color:var(--bg);border:0;border-radius:var(--r);padding:.4rem .9rem;cursor:pointer}
+.add:hover{background:var(--sage);color:#fff}
+.empty{grid-column:1/-1;color:var(--mute);padding:2rem 0}
+aside{position:fixed;top:0;right:0;height:100%;width:min(380px,100%);background:var(--card);box-shadow:-8px 0 30px #0003;transform:translateX(100%);transition:transform .25s;z-index:10;display:flex;flex-direction:column}
+aside.open{transform:none}
+@media(prefers-reduced-motion:reduce){aside{transition:none}}
+.ahead{display:flex;justify-content:space-between;align-items:center;padding:1rem;border-bottom:1px solid var(--line)}
+.items{flex:1;overflow:auto;padding:1rem;display:flex;flex-direction:column;gap:.9rem}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:.7rem;align-items:center}
+.item .e{font-size:1.8rem}
+.qty{display:flex;align-items:center;gap:.4rem;margin-top:.2rem}
+.qty button,.x{border:1px solid var(--line);background:none;border-radius:6px;width:1.8rem;height:1.8rem;cursor:pointer}
+.x{border:0;color:var(--mute)}
+.foot{padding:1rem;border-top:1px solid var(--line)}
+.total{display:flex;justify-content:space-between;font-weight:800;font-size:1.15rem;margin-bottom:.8rem}
+.go{width:100%;background:var(--acc);color:#12233a;border:0;border-radius:var(--r);padding:.7rem;font-weight:800;cursor:pointer}
+.go:disabled{opacity:.5;cursor:not-allowed}
+.scrim{position:fixed;inset:0;background:#0006;z-index:9;display:none}
+.scrim.on{display:block}
+dialog{border:0;border-radius:var(--r);padding:1.5rem;width:min(420px,92vw);background:var(--card);color:var(--ink)}
+dialog::backdrop{background:#0008}
+dialog label{display:block;margin-top:.8rem;font-size:.9rem}
+dialog input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:.5rem;margin-top:.2rem}
+dialog .err{color:#c0392b;font-size:.85rem;min-height:1.2em}
+.toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.6rem 1.1rem;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Brewbench</h1>
+  <button class="cartbtn" id="openCart" aria-label="Open cart">Cart (<span id="count">0</span>)</button>
+</header>
+
+<section class="hero">
+  <h2>Better coffee starts on the bench.</h2>
+  <p>Brewers, grinders, and freshly roasted beans, picked by people who weigh their water.</p>
+</section>
+
+<div class="bar">
+  <input id="q" type="search" placeholder="Search products" aria-label="Search products">
+  <select id="sort" aria-label="Sort products">
+    <option value="feat">Featured</option>
+    <option value="lo">Price: low to high</option>
+    <option value="hi">Price: high to low</option>
+    <option value="az">Name: A to Z</option>
+  </select>
+  <div class="chips" id="chips"></div>
+</div>
+
+<main class="grid" id="grid" aria-live="polite"></main>
+
+<div class="scrim" id="scrim"></div>
+<aside id="cart" aria-label="Shopping cart">
+  <div class="ahead"><strong>Your cart</strong><button class="x" id="closeCart" aria-label="Close cart">✕</button></div>
+  <div class="items" id="items"></div>
+  <div class="foot">
+    <div class="total"><span>Subtotal</span><span id="sub">₹0</span></div>
+    <button class="go" id="checkout">Check out</button>
+  </div>
+</aside>
+
+<dialog id="dlg">
+  <form id="form" novalidate>
+    <h2 id="dtitle">Delivery details</h2>
+    <label>Full name<input name="name" autocomplete="name" required></label>
+    <label>Email<input name="email" type="email" autocomplete="email" required></label>
+    <label>Delivery address<input name="addr" autocomplete="street-address" required></label>
+    <p class="err" id="err" role="alert"></p>
+    <button class="go" type="submit">Place order</button>
+    <button class="chip" type="button" id="cancel" style="margin-top:.6rem;width:100%">Cancel</button>
+  </form>
+  <div id="done" hidden>
+    <h2>Order placed</h2>
+    <p id="msg" style="margin:.8rem 0"></p>
+    <button class="go" id="closeDone">Keep shopping</button>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const PRODUCTS = [
+  {id:1,name:"Gooseneck kettle",cat:"Brewers",price:4999,e:"🫖",bg:"#f2b632",note:"Variable temperature, 0.8 L"},
+  {id:2,name:"Ceramic dripper",cat:"Brewers",price:1499,e:"☕",bg:"#a9c5b0",note:"Size 02, slow-draw ribs"},
+  {id:3,name:"Glass server",cat:"Brewers",price:1199,e:"🧪",bg:"#b8d4e3",note:"600 ml, heat resistant"},
+  {id:4,name:"Hand burr grinder",cat:"Grinders",price:6499,e:"⚙️",bg:"#d9c3a5",note:"40 mm steel burrs"},
+  {id:5,name:"Electric burr grinder",cat:"Grinders",price:11999,e:"🔌",bg:"#c5c9e6",note:"30 grind settings"},
+  {id:6,name:"Ethiopia Guji, 250 g",cat:"Beans",price:749,e:"🫘",bg:"#e6b8a8",note:"Light roast, blueberry and jasmine"},
+  {id:7,name:"Chikmagalur Arabica, 250 g",cat:"Beans",price:549,e:"🌱",bg:"#b5d5a8",note:"Medium roast, cocoa and orange"},
+  {id:8,name:"Monsooned Malabar, 250 g",cat:"Beans",price:499,e:"🌧️",bg:"#c9b79c",note:"Dark roast, low acidity"},
+  {id:9,name:"Brew scale with timer",cat:"Accessories",price:2299,e:"⚖️",bg:"#d6dde3",note:"0.1 g resolution"},
+  {id:10,name:"Paper filters, 100",cat:"Accessories",price:349,e:"📄",bg:"#efe6d2",note:"Fits size 02 drippers"},
+  {id:11,name:"Milk pitcher, 350 ml",cat:"Accessories",price:899,e:"🥛",bg:"#cfe0ea",note:"Stainless steel"},
+  {id:12,name:"Espresso cups, set of 2",cat:"Accessories",price:1099,e:"🍵",bg:"#e8c9d2",note:"90 ml stoneware"}
+];
+const inr = n => new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(n);
+const $ = id => document.getElementById(id);
+let cat = "All", cart = {};
+
+try { cart = JSON.parse(localStorage.getItem("bb-cart")) || {}; } catch(e) { cart = {}; }
+const save = () => { try { localStorage.setItem("bb-cart", JSON.stringify(cart)); } catch(e) {} };
+
+function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("on"); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove("on"),1500); }
+
+function renderChips(){
+  const cats = ["All", ...new Set(PRODUCTS.map(p=>p.cat))];
+  $("chips").innerHTML = cats.map(c=>`<button class="chip" aria-pressed="${c===cat}" data-c="${c}">${c}</button>`).join("");
+}
+
+function renderGrid(){
+  const q = $("q").value.trim().toLowerCase(), s = $("sort").value;
+  let list = PRODUCTS.filter(p => (cat==="All"||p.cat===cat) && (p.name+p.note).toLowerCase().includes(q));
+  if(s==="lo") list.sort((a,b)=>a.price-b.price);
+  if(s==="hi") list.sort((a,b)=>b.price-a.price);
+  if(s==="az") list.sort((a,b)=>a.name.localeCompare(b.name));
+  $("grid").innerHTML = list.length ? list.map(p=>`
+    <article class="card">
+      <div class="art" style="background:${p.bg}" aria-hidden="true">${p.e}</div>
+      <div class="info">
+        <h3>${p.name}</h3><small>${p.note}</small>
+        <div class="row"><span class="price">${inr(p.price)}</span>
+        <button class="add" data-add="${p.id}" aria-label="Add ${p.name} to cart">Add to cart</button></div>
+      </div>
+    </article>`).join("") : `<p class="empty">No products match “${q}”. Clear the search or pick another category.</p>`;
+}
+
+function renderCart(){
+  const ids = Object.keys(cart), n = ids.reduce((a,i)=>a+cart[i],0);
+  const total = ids.reduce((a,i)=>a+cart[i]*PRODUCTS.find(p=>p.id==i).price,0);
+  $("count").textContent = n;
+  $("sub").textContent = inr(total);
+  $("checkout").disabled = !n;
+  $("items").innerHTML = n ? ids.map(i=>{
+    const p = PRODUCTS.find(p=>p.id==i);
+    return `<div class="item"><span class="e">${p.e}</span>
+      <div><div>${p.name}</div><small>${inr(p.price)}</small>
+        <div class="qty"><button data-dec="${i}" aria-label="Decrease quantity">−</button><span>${cart[i]}</span><button data-inc="${i}" aria-label="Increase quantity">+</button></div></div>
+      <button class="x" data-rm="${i}" aria-label="Remove ${p.name}">✕</button></div>`;
+  }).join("") : `<p style="color:var(--mute)">Your cart is empty. Add something from the shop.</p>`;
+  save();
+}
+
+function openCart(open){ $("cart").classList.toggle("open",open); $("scrim").classList.toggle("on",open); }
+
+document.addEventListener("click", e=>{
+  const t = e.target.closest("button"); if(!t) return;
+  if(t.dataset.add){ cart[t.dataset.add]=(cart[t.dataset.add]||0)+1; renderCart(); toast("Added to cart"); }
+  if(t.dataset.inc){ cart[t.dataset.inc]++; renderCart(); }
+  if(t.dataset.dec){ if(--cart[t.dataset.dec]<=0) delete cart[t.dataset.dec]; renderCart(); }
+  if(t.dataset.rm){ delete cart[t.dataset.rm]; renderCart(); }
+  if(t.dataset.c){ cat=t.dataset.c; renderChips(); renderGrid(); }
+});
+$("q").addEventListener("input", renderGrid);
+$("sort").addEventListener("change", renderGrid);
+$("openCart").onclick = () => openCart(true);
+$("closeCart").onclick = $("scrim").onclick = () => openCart(false);
+document.addEventListener("keydown", e => { if(e.key==="Escape") openCart(false); });
+
+$("checkout").onclick = () => {
+  $("form").hidden = false; $("done").hidden = true; $("err").textContent = "";
+  $("dlg").showModal();
+};
+$("cancel").onclick = () => $("dlg").close();
+$("closeDone").onclick = () => $("dlg").close();
+$("form").addEventListener("submit", e=>{
+  e.preventDefault();
+  const f = new FormData(e.target), name=f.get("name").trim(), email=f.get("email").trim(), addr=f.get("addr").trim();
+  if(!name || !addr) return $("err").textContent = "Enter your name and delivery address.";
+  if(!/^\S+@\S+\.\S+$/.test(email)) return $("err").textContent = "Enter a valid email, such as you@example.com.";
+  const ref = "BB-" + Math.random().toString(36).slice(2,8).toUpperCase();
+  // Demo only: send the order to your backend or payment provider here.
+  $("msg").textContent = `Thanks, ${name}. Order ${ref} is confirmed. A receipt goes to ${email}.`;
+  cart = {}; renderCart(); e.target.reset();
+  $("form").hidden = true; $("done").hidden = false; openCart(false);
+});
+
+renderChips(); renderGrid(); renderCart();
+</script>
+</body>
+</html>
